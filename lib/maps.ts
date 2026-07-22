@@ -1,26 +1,19 @@
 export async function searchPlaces(keyword: string, location: string = "Rajkot") {
-  const apiKey = process.env.GOOGLE_PLACE_API_KEY || process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_M_API_KEY;
+  const apiKey = (process.env.GOOGLE_PLACE_API_KEY || process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY) as string;
   if (!apiKey) throw new Error("GOOGLE_PLACE_API_KEY missing");
-
   const query = `${keyword} in ${location}`;
-  
-  // Purana wala API jo tumhare screenshot me kaam kar raha hai
   const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`;
   const res = await fetch(searchUrl);
   const data = await res.json();
-  
   if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-    throw new Error(data.error_message || `Google Places Error: ${data.status}`);
+    throw new Error(data.error_message || `Google Error: ${data.status}`);
   }
-
   const results = data.results || [];
-  
-  // Phone number aur website ke liye details nikalte hain
-  const placesWithDetails = await Promise.all(
+  const detailed = await Promise.all(
     results.slice(0, 15).map(async (place: any) => {
       try {
-        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website&key=${apiKey}`;
-        const dRes = await fetch(detailsUrl);
+        const dUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website&key=${apiKey}`;
+        const dRes = await fetch(dUrl);
         const dData = await dRes.json();
         return {
           displayName: { text: place.name },
@@ -44,6 +37,5 @@ export async function searchPlaces(keyword: string, location: string = "Rajkot")
       }
     })
   );
-
-  return placesWithDetails;
+  return detailed;
 }
